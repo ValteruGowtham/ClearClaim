@@ -6,6 +6,7 @@ import asyncio
 import json
 from datetime import date, datetime
 from typing import Any
+from uuid import UUID
 
 import httpx
 from tinyfish import TinyFish
@@ -28,6 +29,8 @@ class TinyFishAgent(BaseAgent):
 
     async def _append_progress(self, task: Task, message: str) -> None:
         """Append a progress message to the task's progress_steps list."""
+        if task.progress_steps is None:
+            task.progress_steps = []
         task.progress_steps.append(message)
         task.updated_at = datetime.utcnow()
         await task.save()
@@ -83,7 +86,12 @@ class TinyFishAgent(BaseAgent):
         member_id = "Unknown"
         insurance_plan = "Unknown"
 
-        patient = await Patient.get(task.patient_id)
+        try:
+            patient_uuid = UUID(task.patient_id)
+        except (ValueError, TypeError):
+            patient_uuid = None
+
+        patient = await Patient.get(patient_uuid) if patient_uuid else None
         if patient:
             patient_name = patient.full_name
             patient_dob = patient.dob.isoformat() if patient.dob else "Unknown"

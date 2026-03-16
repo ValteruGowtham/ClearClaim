@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { login, getMe } from "@/lib/api";
 
@@ -16,11 +16,33 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
+  const demoMode = searchParams.get("demo") === "1";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("clearclaim_token");
+    if (!token) return;
+
+    getMe()
+      .then((user) => {
+        localStorage.setItem("clearclaim_user", JSON.stringify(user));
+        router.replace("/dashboard");
+      })
+      .catch(() => {
+        localStorage.removeItem("clearclaim_token");
+        localStorage.removeItem("clearclaim_user");
+      });
+  }, [router]);
+
+  useEffect(() => {
+    if (!demoMode) return;
+    setEmail("demo@clearclaim.ai");
+    setPassword("Demo1234!");
+  }, [demoMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +56,24 @@ function LoginForm() {
       router.push(next);
     } catch {
       setError("Invalid email or password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginDemo = async () => {
+    setEmail("demo@clearclaim.ai");
+    setPassword("Demo1234!");
+    setError("");
+    setLoading(true);
+    try {
+      const { access_token } = await login("demo@clearclaim.ai", "Demo1234!");
+      localStorage.setItem("clearclaim_token", access_token);
+      const user = await getMe();
+      localStorage.setItem("clearclaim_user", JSON.stringify(user));
+      router.push("/dashboard");
+    } catch {
+      setError("Demo login failed");
     } finally {
       setLoading(false);
     }
@@ -98,6 +138,15 @@ function LoginForm() {
                 <div className="relative h-full w-8 bg-white/20" />
               </div>
               <span className="relative z-10">{loading ? "Signing in…" : "Sign in"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={loginDemo}
+              disabled={loading}
+              className="mt-3 w-full rounded-lg border border-teal/40 bg-teal/10 px-4 py-2.5 font-mono text-sm text-teal transition hover:bg-teal/15 disabled:opacity-60"
+            >
+              👁 Try Demo Account
             </button>
           </form>
 

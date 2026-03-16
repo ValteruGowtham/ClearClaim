@@ -5,6 +5,7 @@ Celery tasks — background execution of agent workflows.
 import asyncio
 import logging
 from datetime import datetime
+from uuid import UUID
 
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -25,16 +26,24 @@ async def _init_beanie() -> AsyncIOMotorClient:
     """Initialise a fresh Beanie/Motor connection for the worker process."""
     settings = get_settings()
     client = AsyncIOMotorClient(settings.MONGO_URI)
-    db = client.get_default_database()
+    db = client[settings.MONGO_DB_NAME]
     await init_beanie(database=db, document_models=[User, Patient, Task, Claim])
     return client
+
+
+def _to_uuid(value: str) -> UUID | None:
+    try:
+        return UUID(str(value))
+    except (ValueError, TypeError):
+        return None
 
 
 async def _run_agent_task(task_id: str) -> None:
     """Async implementation of the agent task."""
     client = await _init_beanie()
     try:
-        task = await Task.get(task_id)
+        task_uuid = _to_uuid(task_id)
+        task = await Task.get(task_uuid) if task_uuid else None
         if task is None:
             logger.error("Task %s not found", task_id)
             return
@@ -49,7 +58,10 @@ async def _run_agent_task(task_id: str) -> None:
         result = await agent_service.execute(task)
 
         # Reload task in case agent_service mutated it (agent_trace etc.)
-        task = await Task.get(task_id)
+        task = await Task.get(task_uuid) if task_uuid else None
+        if task is None:
+            logger.error("Task %s disappeared after agent execution", task_id)
+            return
 
         # On success: status may still require human review based on parsed result
         next_status = (result or {}).get("task_status") or "completed"
@@ -60,7 +72,9 @@ async def _run_agent_task(task_id: str) -> None:
         if next_status == "completed":
             task.completed_at = datetime.utcnow()
         else:
-            task.failure_reason = result.get("requires_action") or result.get("payer_response")
+            task.failure_reason = (result or {}).get("requires_action") or (result or {}).get(
+                "payer_response"
+            )
         task.updated_at = datetime.utcnow()
         await task.save()
 
@@ -68,7 +82,8 @@ async def _run_agent_task(task_id: str) -> None:
 
         # ── Email notification ───────────────────────────────────
         try:
-            user = await User.find_one(User.id == task.practice_id)  # type: ignore[arg-type]
+            practice_uuid = _to_uuid(task.practice_id)
+            user = await User.get(practice_uuid) if practice_uuid else None
             if user:
                 if task.status == "completed":
                     await mail_service.notify_task_completed(
@@ -95,7 +110,8 @@ async def _run_agent_task(task_id: str) -> None:
         logger.exception("Task %s failed: %s", task_id, exc)
         # Prefer manual review over failed for sensitive healthcare workflows
         try:
-            task = await Task.get(task_id)
+            task_uuid = _to_uuid(task_id)
+            task = await Task.get(task_uuid) if task_uuid else None
             if task:
                 task.status = "requires_human"
                 task.failure_reason = str(exc)
@@ -104,7 +120,8 @@ async def _run_agent_task(task_id: str) -> None:
 
                 # Notify practice user of failure
                 try:
-                    user = await User.find_one(User.id == task.practice_id)  # type: ignore[arg-type]
+                    practice_uuid = _to_uuid(task.practice_id)
+                    user = await User.get(practice_uuid) if practice_uuid else None
                     if user:
                         await mail_service.notify_task_failed(
                             to_email=user.email,

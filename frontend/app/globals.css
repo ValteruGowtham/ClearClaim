@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Cabinet+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,6 +15,8 @@
   body {
     background-color: #0a0f1e;
     color: #f0f4ff;
+    scroll-behavior: smooth;
+    font-family: "Cabinet Grotesk", Inter, system-ui, sans-serif;
   }
 
   /* Custom scrollbar */
@@ -94,6 +98,47 @@
   .shake {
     animation: shake 0.4s ease-in-out;
   }
+
+  .hero-grid {
+    background-image:
+      linear-gradient(rgba(0,212,200,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,200,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .hero-grain {
+    opacity: 0.06;
+    filter: url(#noiseFilter);
+  }
+
+  .hero-mockup {
+    transform: rotateY(-8deg) rotateX(4deg);
+    transform-style: preserve-3d;
+    animation: float-dashboard 6s ease-in-out infinite;
+  }
+
+  .ring-spin-large {
+    animation: ring-spin 20s linear infinite;
+  }
+
+  .ring-spin-small {
+    animation: ring-spin-reverse 20s linear infinite;
+  }
+
+  .marquee {
+    animation: marquee-left 25s linear infinite;
+  }
+
+  .animate-hidden {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+  }
+
+  .animate-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }
 
 @keyframes shimmer {
@@ -134,5 +179,25 @@
   60%       { transform: translateX(6px); }
   75%       { transform: translateX(-3px); }
   90%       { transform: translateX(3px); }
+}
+
+@keyframes float-dashboard {
+  0%, 100% { transform: rotateY(-8deg) rotateX(4deg) translateY(0px); }
+  50% { transform: rotateY(-8deg) rotateX(4deg) translateY(-12px); }
+}
+
+@keyframes ring-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes ring-spin-reverse {
+  from { transform: translate(-50%, -50%) rotate(360deg); }
+  to { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 

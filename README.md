@@ -64,10 +64,10 @@ Once the backend is running, interactive API docs are available at:
 
 | Variable | Description | Default |
 |---|---|---|
-| `MONGODB_URL` | MongoDB connection string | `mongodb://localhost:27017` |
-| `DATABASE_NAME` | MongoDB database name | `clearclaim` |
+| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/clearclaim` |
+| `MONGO_DB_NAME` | MongoDB database name override | `clearclaim` |
 | `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
-| `JWT_SECRET` | Secret key for JWT tokens | (generate your own) |
+| `SECRET_KEY` | Secret key for JWT tokens | (generate your own) |
 | `JWT_ALGORITHM` | JWT algorithm | `HS256` |
 
 ### Frontend (`frontend/.env.local`)

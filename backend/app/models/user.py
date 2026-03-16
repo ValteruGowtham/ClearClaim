@@ -16,6 +16,10 @@ class User(Document):
     hashed_password: str
     full_name: str
     practice_name: str
+    practice_type: str | None = None
+    physician_count: str | None = None
+    primary_specialty: str | None = None
+    phone: str | None = None
     role: Literal["admin", "biller", "provider", "readonly"] = "biller"
     is_active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)

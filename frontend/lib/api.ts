@@ -42,6 +42,10 @@ export interface User {
   email: string;
   full_name: string;
   practice_name: string;
+  practice_type?: string;
+  physician_count?: string;
+  primary_specialty?: string;
+  phone?: string;
   role: string;
   is_active: boolean;
   created_at: string;
@@ -110,6 +114,10 @@ export async function register(body: {
   password: string;
   full_name: string;
   practice_name: string;
+  practice_type?: string;
+  physician_count?: string;
+  primary_specialty?: string;
+  phone?: string;
   role?: string;
 }): Promise<User> {
   const { data } = await apiClient.post<User>("/api/auth/register", body);

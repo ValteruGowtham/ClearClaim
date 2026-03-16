@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
 
     # Connect to MongoDB & init Beanie ODM
     client = AsyncIOMotorClient(settings.MONGO_URI)
-    db = client.get_default_database()
+    db = client[settings.MONGO_DB_NAME]
     await init_beanie(
         database=db,
         document_models=[User, Patient, Task, Claim],
@@ -86,7 +86,10 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

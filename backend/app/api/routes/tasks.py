@@ -87,13 +87,24 @@ def _task_response(t: Task) -> TaskResponse:
 @router.get("/", response_model=list[TaskResponse])
 async def list_tasks(
     current_user: User = Depends(get_current_user),
+    status_filter: Optional[str] = Query(default=None, alias="status"),
+    task_type: Optional[str] = Query(default=None),
+    payer: Optional[str] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     skip: int = Query(default=0, ge=0),
     sort_by: str = Query(default="created_at"),
     sort_order: str = Query(default="desc"),
 ):
     """List tasks for the current practice with optional pagination and sort."""
-    query = Task.find(Task.practice_id == str(current_user.id))
+    filters = [Task.practice_id == str(current_user.id)]
+    if status_filter:
+        filters.append(Task.status == status_filter)
+    if task_type:
+        filters.append(Task.task_type == task_type)
+    if payer:
+        filters.append(Task.payer == payer)
+
+    query = Task.find(*filters)
     sort_field = f"-{sort_by}" if sort_order == "desc" else sort_by
     try:
         tasks = await query.sort(sort_field).skip(skip).limit(limit).to_list()
@@ -171,14 +182,20 @@ async def create_task(
     current_user: User = Depends(get_current_user),
 ):
     """Create a new task and enqueue it for background agent processing."""
-    # Look up patient name to denormalise onto the task
-    patient_name: Optional[str] = None
+    # Look up patient and ensure it belongs to this practice
+    patient: Optional[Patient] = None
     try:
         patient = await Patient.get(UUID(body.patient_id))
-        if patient:
-            patient_name = patient.full_name
     except Exception:
-        pass
+        patient = None
+
+    if not patient or patient.practice_id != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Patient not found",
+        )
+
+    patient_name = patient.full_name
 
     task = Task(
         practice_id=str(current_user.id),
@@ -192,7 +209,13 @@ async def create_task(
     await task.insert()
 
     # Dispatch to Celery — the agent runs in the background
-    run_agent_task.delay(str(task.id))
+    try:
+        run_agent_task.delay(str(task.id))
+    except Exception:
+        task.status = "requires_human"
+        task.failure_reason = "Background queue unavailable"
+        task.updated_at = datetime.utcnow()
+        await task.save()
 
     return _task_response(task)
 

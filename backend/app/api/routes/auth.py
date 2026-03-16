@@ -22,6 +22,10 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: str
     practice_name: str
+    practice_type: str | None = None
+    physician_count: str | None = None
+    primary_specialty: str | None = None
+    phone: str | None = None
     role: str = "biller"
 
 
@@ -40,6 +44,10 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     practice_name: str
+    practice_type: str | None = None
+    physician_count: str | None = None
+    primary_specialty: str | None = None
+    phone: str | None = None
     role: str
     is_active: bool
     created_at: datetime
@@ -67,6 +75,10 @@ async def register(body: RegisterRequest):
         hashed_password=hash_password(body.password),
         full_name=body.full_name,
         practice_name=body.practice_name,
+        practice_type=body.practice_type,
+        physician_count=body.physician_count,
+        primary_specialty=body.primary_specialty,
+        phone=body.phone,
         role=body.role,
     )
     await user.insert()
@@ -76,6 +88,10 @@ async def register(body: RegisterRequest):
         email=user.email,
         full_name=user.full_name,
         practice_name=user.practice_name,
+        practice_type=user.practice_type,
+        physician_count=user.physician_count,
+        primary_specialty=user.primary_specialty,
+        phone=user.phone,
         role=user.role,
         is_active=user.is_active,
         created_at=user.created_at,
@@ -109,6 +125,10 @@ async def me(current_user: User = Depends(get_current_user)):
         email=current_user.email,
         full_name=current_user.full_name,
         practice_name=current_user.practice_name,
+        practice_type=current_user.practice_type,
+        physician_count=current_user.physician_count,
+        primary_specialty=current_user.primary_specialty,
+        phone=current_user.phone,
         role=current_user.role,
         is_active=current_user.is_active,
         created_at=current_user.created_at,

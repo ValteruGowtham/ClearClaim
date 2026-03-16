@@ -9,15 +9,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        black: "#050810",
         navy: {
           DEFAULT: "#0a0f1e",
           light: "#0f1629",
-          card: "#111827",
+          card: "#0f1629",
         },
-        border: "#1e2d45",
+        card: "#0f1629",
+        border: "#1a2540",
         teal: {
           DEFAULT: "#00d4c8",
-          dim: "rgba(0, 212, 200, 0.08)",
+          dim: "rgba(0, 212, 200, 0.06)",
           glow: "rgba(0, 212, 200, 0.15)",
         },
         cgreen: "#00c896",
@@ -27,11 +29,13 @@ module.exports = {
         corange: "#f5a623",
         "text-primary": "#f0f4ff",
         "text-secondary": "#8892a4",
+        muted: "#4a5568",
       },
       fontFamily: {
-        display: ["var(--font-dm-serif)", "serif"],
-        mono: ["var(--font-dm-mono)", "monospace"],
-        label: ["var(--font-space-mono)", "monospace"],
+        display: ["Syne", "system-ui", "sans-serif"],
+        body: ["Cabinet Grotesk", "Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+        label: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       keyframes: {
         "pulse-blue": {

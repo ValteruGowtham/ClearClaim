@@ -1,11 +1,21 @@
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+import os
 from typing import Optional
+
+from pydantic import AliasChoices, Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # MongoDB (include DB name in the URI, e.g. mongodb://localhost:27017/clearclaim)
-    MONGO_URI: str = "mongodb://localhost:27017/clearclaim"
+    # MongoDB
+    MONGO_URI: str = Field(
+        default="mongodb://localhost:27017/clearclaim",
+        validation_alias=AliasChoices("MONGO_URI", "MONGODB_URI", "MONGODB_URL"),
+    )
+    MONGO_DB_NAME: str = Field(
+        default="clearclaim",
+        validation_alias=AliasChoices("MONGO_DB_NAME", "DATABASE_NAME"),
+    )
 
     # Auth / JWT
     SECRET_KEY: str = "change-me-to-a-random-secret-key"
@@ -27,4 +37,22 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+
+    # Backward compatibility for legacy env names used in older docs/compose files
+    if "MONGO_URI" not in os.environ:
+        legacy_mongo = os.getenv("MONGODB_URI") or os.getenv("MONGODB_URL")
+        if legacy_mongo:
+            settings.MONGO_URI = legacy_mongo
+
+    if "MONGO_DB_NAME" not in os.environ:
+        legacy_db = os.getenv("DATABASE_NAME")
+        if legacy_db:
+            settings.MONGO_DB_NAME = legacy_db
+
+    if "SECRET_KEY" not in os.environ:
+        legacy_secret = os.getenv("JWT_SECRET")
+        if legacy_secret:
+            settings.SECRET_KEY = legacy_secret
+
+    return settings
