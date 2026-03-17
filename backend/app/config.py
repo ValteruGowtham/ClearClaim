@@ -27,6 +27,8 @@ class Settings(BaseSettings):
 
     # TinyFish
     TINYFISH_API_KEY: Optional[str] = None
+    TINYFISH_POLL_MAX_ATTEMPTS: int = 60
+    TINYFISH_POLL_INTERVAL_SECONDS: int = 5
 
     # AgentMail
     AGENTMAIL_API_KEY: Optional[str] = None
@@ -37,6 +39,12 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """Return cached app settings.
+
+    In tests that patch environment variables, call
+    `get_settings.cache_clear()` (or `clear_settings_cache()`) during teardown
+    so subsequent tests reload `Settings` from the updated environment.
+    """
     settings = Settings()
 
     # Backward compatibility for legacy env names used in older docs/compose files
@@ -56,3 +64,8 @@ def get_settings() -> Settings:
             settings.SECRET_KEY = legacy_secret
 
     return settings
+
+
+def clear_settings_cache() -> None:
+    """Clear the cached settings instance for test isolation."""
+    get_settings.cache_clear()

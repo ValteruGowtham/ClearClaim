@@ -1,5 +1,8 @@
 """
 TinyFish-backed real web automation agent.
+
+# TODO: Keep TinyFishAgent as the single claim automation agent; legacy
+# ClaimAnalysisAgent stub has been removed.
 """
 
 import asyncio
@@ -192,7 +195,10 @@ class TinyFishAgent(BaseAgent):
         ]
 
         async with httpx.AsyncClient(timeout=60.0) as client:
-            for attempt in range(1, 61):
+            max_attempts = self.settings.TINYFISH_POLL_MAX_ATTEMPTS
+            poll_interval_seconds = self.settings.TINYFISH_POLL_INTERVAL_SECONDS
+
+            for attempt in range(1, max_attempts + 1):
                 await self.log_step(
                     task,
                     "poll_attempt",
@@ -228,10 +234,12 @@ class TinyFishAgent(BaseAgent):
                     await self._append_progress(task, f"Agent run {run_status.lower()}: {err}")
                     raise RuntimeError(f"TinyFish run {run_status}: {err}")
 
-                await asyncio.sleep(5)
+                await asyncio.sleep(poll_interval_seconds)
 
         await self._append_progress(task, "Agent run timed out")
-        raise TimeoutError("TinyFish run timed out after 60 polling attempts")
+        raise TimeoutError(
+            f"TinyFish run timed out after {max_attempts} polling attempts"
+        )
 
     @staticmethod
     def _extract_result_payload(run_body: dict[str, Any]) -> dict[str, Any]:
